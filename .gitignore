@@ -1,0 +1,25 @@
+# Caches e intermedios de Visual Studio (con barra inicial para no excluir packages/.../x64)
+/.vs/
+/x64/
+/x86/
+/Debug/
+/Release/
+/AnimaciónOvercooked_EF/x64/
+/AnimaciónOvercooked_EF/x86/
+/AnimaciónOvercooked_EF/Debug/
+/AnimaciónOvercooked_EF/Release/
+/AnimaciónOvercooked_EF/Animació.acdc3bf1/
+
+*.user
+*.pdb
+*.ilk
+*.obj
+*.tlog
+*.log
+*.lastbuildstate
+*.suo
+*.sdf
+*.opensdf
+*.db
+*.VC.db
+*.ipch
