@@ -5,9 +5,11 @@
 
 using namespace std;
 
-// estado de escena, ejes y camara
+// estado de escena, ejes, animacion y camara
 int escenaActual = 1;
 int mostrarEjes = 0;
+int animando = 1;
+float tiempoAnim = 0;
 
 float camaraX = 0;
 float camaraY = 22;
@@ -533,6 +535,36 @@ void dibujarEscena1() {
 	otrasCosas();
 	ejes();
 
+	// Animacion Escena 1:
+	// 0-5s mira al mar; 5-6s gira 180 grados en 1s; 6-11.2s salta hacia la camara hasta taparla
+	float ciclo = fmodf(tiempoAnim, 13.5f);
+	float px = -8.0f;
+	float py = 0.05f;
+	float pz = 20.0f;
+	float rotY = 180.0f;
+
+	if (ciclo < 5.0f) {
+		rotY = 180.0f;
+	}
+	else if (ciclo < 6.0f) {
+		float u = ciclo - 5.0f;
+		rotY = 180.0f - 180.0f * u;
+	}
+	else if (ciclo < 11.2f) {
+		float u = (ciclo - 6.0f) / 5.2f;
+		rotY = 0.0f;
+		px = -8.0f * (1.0f - u);
+		pz = 20.0f + 35.8f * u;
+		float salto = 2.4f * fabsf(sinf((ciclo - 6.0f) * 6.5f));
+		py = 0.05f + 7.8f * u + salto * (1.0f - 0.65f * u);
+	}
+	else {
+		rotY = 0.0f;
+		px = 0.0f;
+		py = 7.85f;
+		pz = 55.8f;
+	}
+
 	// sombra suave en la arena bajo Piter
 	glDisable(GL_LIGHTING);
 	glEnable(GL_BLEND);
@@ -540,22 +572,21 @@ void dibujarEscena1() {
 	glDepthMask(GL_FALSE);
 	glBegin(GL_TRIANGLE_FAN);
 	glColor4ub(130, 106, 65, 90);
-	glVertex3f(-8.0f, 0.08f, 20.0f);
+	glVertex3f(px, 0.08f, pz);
 	glColor4ub(130, 106, 65, 0);
 	for (int p = 0; p <= 32; p++) {
 		float a = p * 6.2831853f / 32;
-		glVertex3f(-8.0f + 7.2f * cosf(a), 0.08f, 20.0f + 5.0f * sinf(a));
+		glVertex3f(px + 7.2f * cosf(a), 0.08f, pz + 5.0f * sinf(a));
 	}
 	glEnd();
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 	glEnable(GL_LIGHTING);
 
-	// Piter en primer plano mirando las olas y las aves
 	glPushMatrix();
-	glTranslated(-8, 0.05, 20);
+	glTranslated(px, py, pz);
 	glScaled(5, 5, 5);
-	glRotated(82, 0, 1, 0);
+	glRotated(rotY, 0, 1, 0);
 	dinosaurio();
 	glPopMatrix();
 
@@ -565,7 +596,7 @@ void dibujarEscena1() {
 void DibujarEscena2() {
 	glPushMatrix();
 	glRotated(angulo, 0, 1, 0);
-	dibujarEscena2();
+	dibujarEscena2(tiempoAnim);
 	ejes();
 	glPopMatrix();
 }
@@ -573,7 +604,7 @@ void DibujarEscena2() {
 void DibujarEscena3() {
 	glPushMatrix();
 	glRotated(angulo, 0, 1, 0);
-	dibujarEscena3();
+	dibujarEscena3(tiempoAnim);
 	ejes();
 	glPopMatrix();
 }
@@ -581,7 +612,7 @@ void DibujarEscena3() {
 void DibujarEscena4() {
 	glPushMatrix();
 	glRotated(angulo, 0, 1, 0);
-	dibujarEscena4();
+	dibujarEscena4(tiempoAnim);
 	ejes();
 	glPopMatrix();
 }
@@ -605,6 +636,15 @@ void dibujar() {
 	else if (escenaActual == 4) DibujarEscena4();
 
 	glutSwapBuffers();
+}
+
+// Timer del grupo: avanza el tiempo de la animacion cada 20 ms mientras no este pausada
+void Timer(int t) {
+	if (animando == 1) {
+		tiempoAnim += 0.02f;
+	}
+	glutPostRedisplay();
+	glutTimerFunc(20, Timer, 0);
 }
 
 void Teclado(int tecla, int x, int y) {
@@ -632,17 +672,22 @@ void Teclado(int tecla, int x, int y) {
 	glutPostRedisplay();
 }
 
-// Uso glutKeyboardFunc aparte de glutSpecialFunc porque esta lee letras y numeros normales (1-4, E, R)
+// Uso glutKeyboardFunc aparte de glutSpecialFunc porque esta lee letras y numeros normales (1-4, Espacio, E, R)
 // mientras que glutSpecialFunc solo lee flechas y teclas especiales.
 void TecladoNormal(unsigned char tecla, int x, int y) {
 	if (tecla >= '1' && tecla <= '4') {
 		escenaActual = tecla - '0';
+		tiempoAnim = 0;
 		configurarCamara(escenaActual);
+	}
+	else if (tecla == ' ') {
+		animando = 1 - animando;
 	}
 	else if (tecla == 'e' || tecla == 'E') {
 		mostrarEjes = 1 - mostrarEjes;
 	}
 	else if (tecla == 'r' || tecla == 'R') {
+		tiempoAnim = 0;
 		configurarCamara(escenaActual);
 	}
 	glutPostRedisplay();
@@ -650,9 +695,10 @@ void TecladoNormal(unsigned char tecla, int x, int y) {
 
 int main(int argc, char* argv[]) {
 	cout << "Controles:\n";
-	cout << "  1, 2, 3, 4  : Cambiar de escena (vuelve a su encuadre inicial)\n";
+	cout << "  1, 2, 3, 4  : Cambiar de escena (reinicia su animacion y camara)\n";
+	cout << "  Espacio     : Pausar o reanudar la animacion\n";
 	cout << "  E           : Mostrar u ocultar ejes X, Y, Z\n";
-	cout << "  R           : Reiniciar camara de la escena actual\n";
+	cout << "  R           : Reiniciar animacion y camara de la escena actual\n";
 	cout << "  Flechas     : Girar y subir/bajar la camara en 3D\n";
 	cout << "  RePag/AvPag : Acercar o alejar la camara\n";
 
@@ -666,6 +712,7 @@ int main(int argc, char* argv[]) {
 	glutDisplayFunc(dibujar);
 	glutSpecialFunc(Teclado);
 	glutKeyboardFunc(TecladoNormal);
+	glutTimerFunc(0, Timer, 0);
 	glutMainLoop();
 	return 0;
 }

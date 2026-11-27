@@ -50,23 +50,23 @@ void cielo2() {
 	glVertex3d(220, 220, 180); glVertex3d(-220, 220, 180);
 	glEnd();
 
-	// 3 montanas conicas grandes en 3D detras de la tienda
+	// 3 montanas conicas grandes en 3D detras de la tienda del mismo color que la arena
 	glPushMatrix();
-	glColor3ub(138, 98, 62);
+	glColor3ub(224, 198, 136);
 	glTranslated(-74, -1, -130);
 	glRotated(-90, 1, 0, 0);
 	glutSolidCone(72, 74, 40, 20);
 	glPopMatrix();
 
 	glPushMatrix();
-	glColor3ub(82, 144, 58);
+	glColor3ub(214, 188, 126);
 	glTranslated(-4, -1, -142);
 	glRotated(-90, 1, 0, 0);
 	glutSolidCone(78, 86, 40, 20);
 	glPopMatrix();
 
 	glPushMatrix();
-	glColor3ub(82, 144, 58);
+	glColor3ub(220, 194, 132);
 	glTranslated(70, -1, -134);
 	glRotated(-90, 1, 0, 0);
 	glutSolidCone(72, 78, 40, 20);
@@ -94,7 +94,7 @@ void playa2() {
 	caja2(0, 0.04f, 10, 340, 0.14f, 0.45f);
 }
 
-void tienda2() {
+void tienda2(float anguloPuerta) {
 	glPushMatrix();
 	glTranslated(-18, 0.5, -24);
 	glScaled(0.65, 0.65, 0.65);
@@ -184,40 +184,47 @@ void tienda2() {
 	caja2(0, 0, 0, 0.9f, 5.0f, 0.25f);
 	glPopMatrix();
 
-	// puerta 3D con rejas en el hueco derecho (5.8, 14.0, 9)
-	glColor3ub(106, 92, 84);
-	caja2(5.8f, 14.0f, 9.0f, 15.2f, 24.8f, 1.3f);
+	// marco de la puerta fijo
 	glColor3ub(38, 32, 30);
-	// marco de puerta y barras verticales de madera
 	caja2(-1.6f, 14.0f, 9.3f, 0.8f, 25.0f, 1.8f);
 	caja2(13.2f, 14.0f, 9.3f, 0.8f, 25.0f, 1.8f);
 	caja2(5.8f, 26.2f, 9.3f, 15.6f, 0.8f, 1.8f);
+
+	// hoja de la puerta 3D pivotada en la bisagra izquierda (-1.6, 0, 9.0) para abrirse hacia adentro
+	glPushMatrix();
+	glTranslated(-1.6, 0, 9.0);
+	glRotated(anguloPuerta, 0, 1, 0);
+	glTranslated(1.6, 0, -9.0);
+
+	glColor3ub(106, 92, 84);
+	caja2(5.8f, 14.0f, 9.0f, 14.4f, 24.4f, 1.2f);
+	glColor3ub(38, 32, 30);
 	for (int i = -2; i <= 2; i++) {
-		caja2(5.8f + i * 2.8f, 14.0f, 9.75f, 0.45f, 24.2f, 0.35f);
+		caja2(5.8f + i * 2.6f, 14.0f, 9.72f, 0.45f, 23.8f, 0.35f);
 	}
 	// reja superior de la puerta
 	for (int j = 0; j < 3; j++) {
-		caja2(5.8f, 20.0f + j * 2.5f, 9.85f, 14.6f, 0.45f, 0.35f);
+		caja2(5.8f, 20.0f + j * 2.5f, 9.82f, 14.0f, 0.45f, 0.35f);
 	}
 	// manija
-	caja2(0.2f, 12.2f, 10.1f, 0.7f, 1.8f, 0.7f);
+	caja2(11.6f, 12.2f, 10.05f, 0.7f, 1.8f, 0.7f);
+	glPopMatrix();
 
-	// muebles interiores 3D visibles al rotar la camara o mirar dentro
+	// muebles interiores 3D visibles al rotar o cuando se abre la puerta
 	glColor3ub(168, 114, 68);
-	caja2(0, 5.5f, -15, 58, 8, 8);
+	caja2(0, 5.5f, -24, 58, 8, 8);
 	glColor3ub(145, 148, 154);
-	caja2(-28, 12, -31, 22, 20, 6);
-	caja2(28, 12, -31, 22, 20, 6);
+	caja2(-28, 12, -33, 22, 20, 6);
+	caja2(28, 12, -33, 22, 20, 6);
 
 	glPopMatrix();
 }
 
-void dinosaurio2() {
-	// Dinosaurio del grupo en primer plano a la derecha mirando hacia la tienda
+void dinosaurio2(float x, float y, float z, float rotY) {
 	glPushMatrix();
-	glTranslated(28, 0.2, 16);
-	glScaled(5, 5, 5);
-	glRotated(-125, 0, 1, 0);
+	glTranslated(x, y, z);
+	glScaled(4.2, 4.2, 4.2);
+	glRotated(rotY, 0, 1, 0);
 
 	glColor3ub(39, 64, 91);
 	esfera2(0, 0.42f, 0, 0.96f, 0.42f, 0.69f);
@@ -279,11 +286,61 @@ void dinosaurio2() {
 	glPopMatrix();
 }
 
-void dibujarEscena2() {
+void dibujarEscena2(float t) {
+	// Animacion Escena 2:
+	// 0-4.8s salta desde fuera de cuadro hacia la puerta; 4.8-6.2s se abre la puerta;
+	// 6.2-9.0s entra saltando a la tienda; 9.0-10.2s se cierra la puerta
+	float ciclo = fmodf(t, 11.5f);
+	float dx = 75.0f;
+	float dy = 0.2f;
+	float dz = 20.0f;
+	float rotY = -105.0f;
+	float angPuerta = 0.0f;
+
+	if (ciclo < 4.8f) {
+		float u = ciclo / 4.8f;
+		dx = 75.0f + (-14.2f - 75.0f) * u;
+		dz = 20.0f + (-4.0f - 20.0f) * u;
+		dy = 0.2f + 1.8f * fabsf(sinf(ciclo * 6.5f));
+		if (u < 0.85f) rotY = -105.0f;
+		else rotY = -105.0f + (-180.0f + 105.0f) * ((u - 0.85f) / 0.15f);
+	}
+	else if (ciclo < 6.2f) {
+		float u = (ciclo - 4.8f) / 1.4f;
+		dx = -14.2f;
+		dy = 0.2f;
+		dz = -4.0f;
+		rotY = 180.0f;
+		angPuerta = -95.0f * u;
+	}
+	else if (ciclo < 9.0f) {
+		float u = (ciclo - 6.2f) / 2.8f;
+		dx = -14.2f;
+		dz = -4.0f + (-28.0f + 4.0f) * u;
+		dy = 1.4f + 1.5f * fabsf(sinf((ciclo - 6.2f) * 6.5f));
+		rotY = 180.0f;
+		angPuerta = -95.0f;
+	}
+	else if (ciclo < 10.2f) {
+		float u = (ciclo - 9.0f) / 1.2f;
+		dx = -14.2f;
+		dy = 1.4f;
+		dz = -28.0f;
+		rotY = 180.0f;
+		angPuerta = -95.0f * (1.0f - u);
+	}
+	else {
+		dx = -14.2f;
+		dy = 1.4f;
+		dz = -28.0f;
+		rotY = 180.0f;
+		angPuerta = 0.0f;
+	}
+
 	glPushMatrix();
 	playa2();
 	cielo2();
-	tienda2();
-	dinosaurio2();
+	tienda2(angPuerta);
+	dinosaurio2(dx, dy, dz, rotY);
 	glPopMatrix();
 }
